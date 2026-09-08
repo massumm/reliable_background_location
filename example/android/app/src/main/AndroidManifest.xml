@@ -1,4 +1,20 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      Runtime permissions the host app decides on. The plugin declares the
+      install-time ones (FOREGROUND_SERVICE, FOREGROUND_SERVICE_LOCATION,
+      WAKE_LOCK) but deliberately not these, because which of them an app asks
+      for shows up in its Play listing.
+
+      Without ACCESS_FINE_LOCATION granted at runtime, startForeground with a
+      "location" service type throws, and the plugin reports
+      StartFailure.locationPermissionMissing.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:label="reliable_background_location_example"
         android:name="${applicationName}"

@@ -149,6 +149,30 @@ settings.
 | 14 (34) | `foregroundServiceType` must be declared and match the permission. |
 | 15+ (35+) | Tighter limits on total foreground-service runtime. |
 
+## Troubleshooting
+
+**`StartFailure.locationPermissionMissing` on the very first start.** The
+runtime permission has not been granted. A `location` foreground service type
+is checked against `ACCESS_FINE_LOCATION` at `startForeground` time, so the
+service cannot come up without it — request the permission before calling
+`start()`. See `example/lib/main.dart` for the order Android requires.
+
+**`StartFailure.notAllowedFromBackground`.** Something called `start()` while
+the app was not in the foreground — a push handler or a timer, typically.
+Start from a user interaction, or hold a foreground-service exemption.
+
+**Tracking starts, then stops when the screen locks.** `ACCESS_BACKGROUND_LOCATION`
+is missing. It cannot be requested in the same prompt as foreground location on
+Android 11+; the user has to pick "Allow all the time" in system settings.
+
+**Fixes arrive far less often than `interval`.** Check `isBatterySaverOn()`.
+Battery saver and Doze both stretch delivery, sometimes to minutes, and there
+is no API to opt out — only `openBatteryOptimisationSettings()` to ask the user.
+
+**Everything works except on one manufacturer's phone.** Vendor ROMs kill
+background services on their own schedule. `openAutoStartSettings()` opens the
+relevant screen where one exists.
+
 ## Limitations
 
 Stated plainly, because the alternative is a bug report:

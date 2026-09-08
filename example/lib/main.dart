@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:reliable_background_location/reliable_background_location.dart';
 
 void main() => runApp(const DemoApp());
@@ -73,8 +74,51 @@ class _TrackingPageState extends State<TrackingPage> {
     });
   }
 
+  /// Asks for what the service needs, in the order Android insists on.
+  ///
+  /// Foreground location first, then notifications, and only then background
+  /// location — which from Android 11 cannot share a prompt with foreground
+  /// location and has to be granted from system settings instead. Requesting
+  /// them together silently returns denied for the background one.
+  Future<bool> _ensurePermissions() async {
+    final whenInUse = await Permission.locationWhenInUse.request();
+    if (!whenInUse.isGranted) {
+      setState(
+        () => _error =
+            'Location permission denied. '
+            'The service cannot start without it.',
+      );
+      return false;
+    }
+
+    // Android 13+. Denied notifications also block the service, because a
+    // foreground service without a notification is not something the platform
+    // allows.
+    await Permission.notification.request();
+
+    // Optional but the whole point: without it, fixes stop when the app leaves
+    // the screen. Not fatal, so tracking still starts.
+    final always = await Permission.locationAlways.status;
+    if (!always.isGranted) {
+      final asked = await Permission.locationAlways.request();
+      if (!asked.isGranted) {
+        setState(
+          () => _error =
+              'Background location not granted — tracking '
+              'will pause when the app leaves the screen. Grant "Allow all the '
+              'time" in system settings.',
+        );
+      }
+    }
+
+    return true;
+  }
+
   Future<void> _start() async {
     setState(() => _error = null);
+
+    if (!await _ensurePermissions()) return;
+    if (!mounted) return;
 
     final result = await ReliableBackgroundLocation.start(
       notification: const NotificationConfig(
@@ -131,10 +175,7 @@ class _TrackingPageState extends State<TrackingPage> {
                   ReliableBackgroundLocation.openBatteryOptimisationSettings,
             ),
           if (_error != null)
-            _Banner(
-              colour: Colors.red.shade100,
-              text: 'Tracking did not start — $_error',
-            ),
+            _Banner(colour: Colors.red.shade100, text: _error!),
           if (_recoveredCount > 0)
             _Banner(
               colour: Colors.green.shade100,
