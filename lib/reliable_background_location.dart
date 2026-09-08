@@ -62,16 +62,13 @@ export 'src/start_result.dart';
 ///
 /// ## Required manifest entries
 ///
-/// The plugin contributes the service declaration, but the host app must
-/// declare the permissions it actually wants:
+/// The plugin declares the service, the receiver and their install-time
+/// permissions. The host app adds the runtime ones it wants to ask for:
 ///
 /// ```xml
 /// <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 /// <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
 /// <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-/// <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
-/// <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
-/// <uses-permission android:name="android.permission.WAKE_LOCK"/>
 /// ```
 class ReliableBackgroundLocation {
   ReliableBackgroundLocation._();

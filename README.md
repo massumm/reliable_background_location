@@ -102,22 +102,25 @@ if (await ReliableBackgroundLocation.isRunning()) {
 
 ### Manifest
 
-The plugin contributes the service declaration. Your app declares the
-permissions it actually wants:
+The plugin already declares the service, the receiver, and the three
+install-time permissions they need (`FOREGROUND_SERVICE`,
+`FOREGROUND_SERVICE_LOCATION`, `WAKE_LOCK`) — the middle one has to match the
+service type or Android 14+ refuses the start outright.
+
+What it does **not** declare is the runtime permissions, because which ones you
+ask for and when is a product decision that shows up in your Play listing. Add
+these to your app's manifest:
 
 ```xml
 <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
-<uses-permission android:name="android.permission.WAKE_LOCK"/>
 ```
 
-This package does not request permissions for you — use `permission_handler`
-or your own flow. `ACCESS_BACKGROUND_LOCATION` cannot be requested in the same
-prompt as foreground location on Android 11+; the user has to grant it from
-system settings.
+This package does not request them for you — use `permission_handler` or your
+own flow. `ACCESS_BACKGROUND_LOCATION` cannot be requested in the same prompt
+as foreground location on Android 11+; the user has to grant it from system
+settings.
 
 ## API
 

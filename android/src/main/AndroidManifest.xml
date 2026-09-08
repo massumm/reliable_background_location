@@ -1,3 +1,37 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-  package="dev.masumalreza.reliable_background_location">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      Install-time permissions the plugin itself requires. These are not
+      runtime permissions, and FOREGROUND_SERVICE_LOCATION has to match the
+      service type below or Android 14+ refuses to start the service at all,
+      so the plugin declares them rather than leaving them to each host app.
+
+      Runtime location permissions (ACCESS_FINE_LOCATION,
+      ACCESS_BACKGROUND_LOCATION) and POST_NOTIFICATIONS are deliberately NOT
+      declared here: which of those an app asks for, and when, is a product
+      decision that shows up in the Play listing.
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <application>
+
+        <service
+            android:name=".TrackingService"
+            android:exported="false"
+            android:foregroundServiceType="location"
+            android:stopWithTask="false" />
+
+        <!--
+          stopWithTask="false" is the point of the whole package: the service
+          must survive the user swiping the app away.
+        -->
+
+        <receiver
+            android:name=".LocationUpdatesReceiver"
+            android:exported="false" />
+
+    </application>
+
 </manifest>
