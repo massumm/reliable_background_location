@@ -1,0 +1,37 @@
+name: reliable_background_location
+description: >-
+  Background location tracking on Android that keeps recording through Doze,
+  screen-off, battery saver and process death, and reports refused foreground
+  service starts instead of failing silently.
+version: 0.1.0
+
+homepage: https://github.com/massumm/reliable_background_location
+repository: https://github.com/massumm/reliable_background_location
+issue_tracker: https://github.com/massumm/reliable_background_location/issues
+
+topics:
+  - location
+  - geolocation
+  - background
+  - android
+  - gps
+
+environment:
+  sdk: ^3.12.2
+  flutter: '>=3.3.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: dev.masumalreza.reliable_background_location
+        pluginClass: ReliableBackgroundLocationPlugin
