@@ -13,10 +13,12 @@ import 'package:flutter/services.dart';
 
 import 'src/config.dart';
 import 'src/location_sample.dart';
+import 'src/permission_state.dart';
 import 'src/start_result.dart';
 
 export 'src/config.dart';
 export 'src/location_sample.dart';
+export 'src/permission_state.dart';
 export 'src/start_result.dart';
 
 /// Entry point for background location tracking.
@@ -28,6 +30,9 @@ export 'src/start_result.dart';
 /// ## Minimum viable usage
 ///
 /// ```dart
+/// final granted = await ReliableBackgroundLocation.requestPermissions();
+/// if (!granted.canStart) return;
+///
 /// final result = await ReliableBackgroundLocation.start(
 ///   notification: const NotificationConfig(
 ///     title: 'Recording your run',
@@ -93,6 +98,37 @@ class ReliableBackgroundLocation {
         .receiveBroadcastStream()
         .map((e) => LocationSample.fromMap(e as Map<dynamic, dynamic>))
         .asBroadcastStream();
+  }
+
+  /// Reports which permissions are held, without prompting for anything.
+  ///
+  /// Safe to call from anywhere, including a background isolate.
+  static Future<PermissionState> checkPermissions() async {
+    final map = await _channel.invokeMapMethod<String, Object?>(
+      'checkPermissions',
+    );
+    return PermissionState.fromMap(map ?? const {});
+  }
+
+  /// Prompts for the permissions the service needs, in the order Android
+  /// requires, and reports what was granted.
+  ///
+  /// Foreground location and notifications are requested first, then background
+  /// location as a **separate** prompt — from Android 11 the two cannot share
+  /// one request, and asking for them together returns denied without the user
+  /// ever seeing a dialog.
+  ///
+  /// A denied background permission is not fatal: [PermissionState.canStart]
+  /// can still be true while [PermissionState.isComplete] is false, which means
+  /// tracking will run while the app is on screen and pause once it is not.
+  ///
+  /// Resolves with the current state and prompts for nothing when no Activity
+  /// is attached, since a prompt is impossible there.
+  static Future<PermissionState> requestPermissions() async {
+    final map = await _channel.invokeMapMethod<String, Object?>(
+      'requestPermissions',
+    );
+    return PermissionState.fromMap(map ?? const {});
   }
 
   /// Starts (or reconfigures) the tracking service.

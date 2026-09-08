@@ -99,6 +99,31 @@ void main() {
     });
   });
 
+  group('permissions', () {
+    test('checkPermissions parses the platform map', () async {
+      reply = {
+        'fineLocation': true,
+        'coarseLocation': true,
+        'backgroundLocation': false,
+        'notifications': true,
+      };
+
+      final state = await ReliableBackgroundLocation.checkPermissions();
+
+      expect(calls.single.method, 'checkPermissions');
+      expect(state.canStart, isTrue);
+      expect(state.isComplete, isFalse);
+    });
+
+    test('requestPermissions treats no reply as nothing granted', () async {
+      reply = null;
+
+      final state = await ReliableBackgroundLocation.requestPermissions();
+
+      expect(state.canStart, isFalse);
+    });
+  });
+
   group('state queries', () {
     test('isRunning defaults to false rather than throwing', () async {
       reply = null;

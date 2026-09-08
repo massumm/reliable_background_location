@@ -59,6 +59,11 @@ one exists.
 ## Quick start
 
 ```dart
+// Prompts in the order Android requires: foreground location and
+// notifications first, then background location as a separate request.
+final granted = await ReliableBackgroundLocation.requestPermissions();
+if (!granted.canStart) return;
+
 final result = await ReliableBackgroundLocation.start(
   notification: const NotificationConfig(
     title: 'Recording your run',
@@ -117,15 +122,18 @@ these to your app's manifest:
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 ```
 
-This package does not request them for you — use `permission_handler` or your
-own flow. `ACCESS_BACKGROUND_LOCATION` cannot be requested in the same prompt
-as foreground location on Android 11+; the user has to grant it from system
-settings.
+Declaring them is all you need to do: `requestPermissions()` prompts for them
+in the order Android accepts, so no separate permission package is required.
+`ACCESS_BACKGROUND_LOCATION` still cannot share a prompt with foreground
+location on Android 11+ — the plugin asks for it as a second request, and if
+the user declines, tracking runs but pauses off-screen.
 
 ## API
 
 | Member | Purpose |
 | --- | --- |
+| `requestPermissions()` | Prompt for what the service needs, correctly ordered. |
+| `checkPermissions()` | Read permission state without prompting. |
 | `start(...)` | Start or reconfigure tracking. Returns a `StartResult` — check `started`. |
 | `stop()` | Stop, dismiss the notification, release the wakelock. |
 | `locations` | Live `Stream<LocationSample>`, for as long as an isolate is alive. |
@@ -154,8 +162,8 @@ settings.
 **`StartFailure.locationPermissionMissing` on the very first start.** The
 runtime permission has not been granted. A `location` foreground service type
 is checked against `ACCESS_FINE_LOCATION` at `startForeground` time, so the
-service cannot come up without it — request the permission before calling
-`start()`. See `example/lib/main.dart` for the order Android requires.
+service cannot come up without it — call `requestPermissions()` before
+`start()` and check `canStart` on the result.
 
 **`StartFailure.notAllowedFromBackground`.** Something called `start()` while
 the app was not in the foreground — a push handler or a timer, typically.

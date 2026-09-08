@@ -9,16 +9,20 @@ import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
 import io.flutter.embedding.engine.plugins.FlutterPlugin
+import io.flutter.embedding.engine.plugins.activity.ActivityAware
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 
 /** Plugin entry point. See [LocationBridge] for the channel handling. */
-class ReliableBackgroundLocationPlugin : FlutterPlugin {
+class ReliableBackgroundLocationPlugin : FlutterPlugin, ActivityAware {
     private var bridge: LocationBridge? = null
+    private val permissions = PermissionManager()
+    private var activityBinding: ActivityPluginBinding? = null
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-        bridge = LocationBridge(binding.applicationContext).also {
+        bridge = LocationBridge(binding.applicationContext, permissions).also {
             it.attach(binding.binaryMessenger)
         }
     }
@@ -26,6 +30,26 @@ class ReliableBackgroundLocationPlugin : FlutterPlugin {
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         bridge?.detach()
         bridge = null
+    }
+
+    // Permission prompts need an Activity, and the plugin outlives any single
+    // one of them — so the reference is swapped rather than held.
+
+    override fun onAttachedToActivity(binding: ActivityPluginBinding) {
+        activityBinding = binding
+        binding.addRequestPermissionsResultListener(permissions)
+        permissions.attach(binding.activity)
+    }
+
+    override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) =
+        onAttachedToActivity(binding)
+
+    override fun onDetachedFromActivityForConfigChanges() = onDetachedFromActivity()
+
+    override fun onDetachedFromActivity() {
+        activityBinding?.removeRequestPermissionsResultListener(permissions)
+        activityBinding = null
+        permissions.attach(null)
     }
 }
 
@@ -37,8 +61,10 @@ class ReliableBackgroundLocationPlugin : FlutterPlugin {
  * outlive the engine belongs on disk in [ServiceState], and anything that has
  * to run without one belongs in [LocationUpdatesReceiver].
  */
-internal class LocationBridge(private val context: Context) :
-    MethodChannel.MethodCallHandler,
+internal class LocationBridge(
+    private val context: Context,
+    private val permissions: PermissionManager,
+) : MethodChannel.MethodCallHandler,
     EventChannel.StreamHandler {
 
     private var methodChannel: MethodChannel? = null
@@ -91,6 +117,10 @@ internal class LocationBridge(private val context: Context) :
                 "clearBuffered" -> {
                     LocationBuffer.clear(context)
                     result.success(null)
+                }
+                "checkPermissions" -> result.success(permissions.check(context).toMap())
+                "requestPermissions" -> permissions.request(context) {
+                    result.success(it.toMap())
                 }
                 "isBatterySaverOn" -> result.success(isBatterySaverOn())
                 "openBatteryOptimisationSettings" -> {

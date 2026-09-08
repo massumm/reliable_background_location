@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:reliable_background_location/reliable_background_location.dart';
 
 void main() => runApp(const DemoApp());
@@ -74,41 +73,33 @@ class _TrackingPageState extends State<TrackingPage> {
     });
   }
 
-  /// Asks for what the service needs, in the order Android insists on.
+  /// Asks for what the service needs and reports honestly what came back.
   ///
-  /// Foreground location first, then notifications, and only then background
-  /// location — which from Android 11 cannot share a prompt with foreground
-  /// location and has to be granted from system settings instead. Requesting
-  /// them together silently returns denied for the background one.
+  /// The plugin handles the ordering — foreground location and notifications
+  /// first, background location as its own prompt afterwards — so this only
+  /// has to decide what to do with the answer.
   Future<bool> _ensurePermissions() async {
-    final whenInUse = await Permission.locationWhenInUse.request();
-    if (!whenInUse.isGranted) {
+    final state = await ReliableBackgroundLocation.requestPermissions();
+
+    if (!state.canStart) {
       setState(
-        () => _error =
-            'Location permission denied. '
-            'The service cannot start without it.',
+        () => _error = state.fineLocation
+            ? 'Notification permission denied. A foreground service cannot run '
+                  'without a notification, so tracking cannot start.'
+            : 'Location permission denied. Tracking cannot start without it.',
       );
       return false;
     }
 
-    // Android 13+. Denied notifications also block the service, because a
-    // foreground service without a notification is not something the platform
-    // allows.
-    await Permission.notification.request();
-
-    // Optional but the whole point: without it, fixes stop when the app leaves
-    // the screen. Not fatal, so tracking still starts.
-    final always = await Permission.locationAlways.status;
-    if (!always.isGranted) {
-      final asked = await Permission.locationAlways.request();
-      if (!asked.isGranted) {
-        setState(
-          () => _error =
-              'Background location not granted — tracking '
-              'will pause when the app leaves the screen. Grant "Allow all the '
-              'time" in system settings.',
-        );
-      }
+    if (!state.isComplete) {
+      // Not fatal — tracking runs, it just will not survive the app leaving
+      // the screen. Saying so beats a later "it stopped by itself" report.
+      setState(
+        () => _error =
+            'Background location not granted — tracking will '
+            'pause when the app leaves the screen. Choose "Allow all the time" '
+            'in system settings to fix it.',
+      );
     }
 
     return true;
