@@ -181,6 +181,15 @@ is no API to opt out — only `openBatteryOptimisationSettings()` to ask the use
 background services on their own schedule. `openAutoStartSettings()` opens the
 relevant screen where one exists.
 
+## Documentation
+
+| | |
+| --- | --- |
+| [Architecture](doc/architecture.md) | How the four pieces split by lifetime, and why a `PendingIntent` rather than a callback. |
+| [Recipes](doc/recipes.md) | Complete patterns — run tracking, resuming an interrupted session, handling each failure. |
+| [Comparison](doc/comparison.md) | What the alternatives do, where each leaves you, and when to use one of them instead. |
+| [Testing](doc/testing.md) | The `adb` commands for forcing Doze, process death and sticky restarts. |
+
 ## Limitations
 
 Stated plainly, because the alternative is a bug report:
